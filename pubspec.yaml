@@ -1,0 +1,23 @@
+name: flutter_refresh
+description: A new Flutter package project.
+version: 0.0.1
+author:
+homepage:
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+  flutter: ">=1.17.0 <2.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_gestures:
+    git:
+      url: git://github.com/mupiaomiao/flutter_gestures.git
+      ref: master
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
