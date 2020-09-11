@@ -8,22 +8,18 @@ class SliverRefresh extends SingleChildRenderObjectWidget {
     Widget child,
     this.refreshIndicatorLayoutExtent,
     this.inactiveIndicatorLayoutExtent,
-    this.margin = const EdgeInsets.all(0),
   })  : assert(inactiveIndicatorLayoutExtent != null),
         assert(inactiveIndicatorLayoutExtent >= 0),
         assert(refreshIndicatorLayoutExtent != null),
         assert(refreshIndicatorLayoutExtent >= 0.0),
-        assert(margin != null),
         super(key: key, child: child);
 
-  final EdgeInsetsGeometry margin;
   final double refreshIndicatorLayoutExtent;
   final double inactiveIndicatorLayoutExtent;
 
   @override
   _RenderSliverRefresh createRenderObject(BuildContext context) {
     return _RenderSliverRefresh(
-      margin: margin.resolve(TextDirection.ltr),
       refreshIndicatorLayoutExtent: refreshIndicatorLayoutExtent,
       inactiveIndicatorLayoutExtent: inactiveIndicatorLayoutExtent,
     );
@@ -33,7 +29,6 @@ class SliverRefresh extends SingleChildRenderObjectWidget {
   void updateRenderObject(
       BuildContext context, covariant _RenderSliverRefresh renderObject) {
     renderObject
-      ..margin = margin.resolve(TextDirection.ltr)
       ..refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent
       ..inactiveIndicatorLayoutExtent = inactiveIndicatorLayoutExtent;
   }
@@ -43,19 +38,15 @@ class _RenderSliverRefresh extends RenderSliver
     with RenderObjectWithChildMixin<RenderBox> {
   _RenderSliverRefresh({
     RenderBox child,
-    @required EdgeInsets margin,
     @required double refreshIndicatorLayoutExtent,
     @required double inactiveIndicatorLayoutExtent,
   })  : assert(inactiveIndicatorLayoutExtent != null),
         assert(inactiveIndicatorLayoutExtent >= 0.0),
         assert(refreshIndicatorLayoutExtent != null),
         assert(refreshIndicatorLayoutExtent >= 0.0),
-        assert(margin != null),
-        layoutExtentOffsetCompensation =
-            margin.vertical + inactiveIndicatorLayoutExtent,
-        _inactiveIndicatorLayoutExtent = inactiveIndicatorLayoutExtent,
         _refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent,
-        _margin = margin {
+        layoutExtentOffsetCompensation = inactiveIndicatorLayoutExtent,
+        _inactiveIndicatorLayoutExtent = inactiveIndicatorLayoutExtent {
     this.child = child;
   }
 
@@ -76,18 +67,7 @@ class _RenderSliverRefresh extends RenderSliver
     assert(value >= 0.0);
     if (value == _inactiveIndicatorLayoutExtent) return;
     _inactiveIndicatorLayoutExtent = value;
-    layoutExtentOffsetCompensation = margin.vertical + value;
-    markNeedsLayout();
-  }
-
-  EdgeInsets _margin;
-  EdgeInsets get margin => _margin;
-  set margin(EdgeInsets value) {
-    assert(value != null);
-    if (value == _margin) return;
-    _margin = value;
-    layoutExtentOffsetCompensation =
-        value.vertical + inactiveIndicatorLayoutExtent;
+    layoutExtentOffsetCompensation = value;
     markNeedsLayout();
   }
 
@@ -99,9 +79,8 @@ class _RenderSliverRefresh extends RenderSliver
     assert(constraints.axisDirection == AxisDirection.down);
     assert(constraints.growthDirection == GrowthDirection.forward);
 
-    final double layoutExtent = margin.vertical +
-        refreshIndicatorLayoutExtent +
-        inactiveIndicatorLayoutExtent;
+    final double layoutExtent =
+        refreshIndicatorLayoutExtent + inactiveIndicatorLayoutExtent;
     if (layoutExtent != layoutExtentOffsetCompensation) {
       geometry = SliverGeometry(
         scrollOffsetCorrection: layoutExtent - layoutExtentOffsetCompensation,
@@ -114,14 +93,14 @@ class _RenderSliverRefresh extends RenderSliver
         constraints.overlap < 0.0 ? constraints.overlap.abs() : 0.0;
     child.layout(
       constraints.asBoxConstraints(
-        maxExtent: layoutExtent - margin.vertical + overscrolledExtent,
-        crossAxisExtent: constraints.crossAxisExtent - margin.horizontal,
+        maxExtent: layoutExtent + overscrolledExtent,
+        crossAxisExtent: constraints.crossAxisExtent,
       ),
       parentUsesSize: true,
     );
     geometry = SliverGeometry(
       scrollExtent: layoutExtent,
-      paintOrigin: -overscrolledExtent - constraints.scrollOffset + margin.top,
+      paintOrigin: -overscrolledExtent - constraints.scrollOffset,
       paintExtent: max(
         0.0,
         max(child.size.height, layoutExtent) - constraints.scrollOffset,
@@ -136,19 +115,6 @@ class _RenderSliverRefresh extends RenderSliver
       ),
     );
   }
-
-  // @required this.axisDirection,
-  //   @required this.growthDirection,
-  //   @required this.userScrollDirection,
-  //   @required this.scrollOffset,
-  //   @required this.precedingScrollExtent,
-  //   @required this.overlap,
-  //   @required this.remainingPaintExtent,
-  //   @required this.crossAxisExtent,
-  //   @required this.crossAxisDirection,
-  //   @required this.viewportMainAxisExtent,
-  //   @required this.remainingCacheExtent,
-  //   @required this.cacheOrigin,
 
   void printConstraints() {
     final stringBuffer = StringBuffer();
@@ -180,8 +146,7 @@ class _RenderSliverRefresh extends RenderSliver
     print('\r\n\r\n');
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
-      paintContext.paintChild(
-          child, offset.translate(margin.left, constraints.scrollOffset));
+      paintContext.paintChild(child, offset);
     }
   }
 

@@ -32,10 +32,8 @@ class RefreshControl extends StatefulWidget {
     Key key,
     this.controller,
     @required this.onRefresh,
-    this.margin = const EdgeInsets.all(0),
     this.delegate = const _RefreshIndicatorDelegate(),
-  })  : assert(margin != null),
-        assert(delegate != null),
+  })  : assert(delegate != null),
         assert(onRefresh != null),
         assert(delegate.refreshIndicatorExtent != null),
         assert(delegate.refreshIndicatorExtent >= 0.0),
@@ -50,7 +48,6 @@ class RefreshControl extends StatefulWidget {
             'than the amount initially created by overscrolling.'),
         super(key: key);
 
-  final EdgeInsetsGeometry margin;
   final RefreshCallback onRefresh;
   final RefreshController controller;
   final RefreshIndicatorDelegate delegate;
@@ -237,7 +234,6 @@ class _RefreshControlState extends State<RefreshControl> {
   @override
   Widget build(BuildContext context) {
     return SliverRefresh(
-      margin: widget.margin,
       inactiveIndicatorLayoutExtent: widget.delegate.inactiveIndicatorExtent,
       refreshIndicatorLayoutExtent: refreshState == RefreshIndicatorMode.refresh
           ? widget.delegate.refreshIndicatorExtent
