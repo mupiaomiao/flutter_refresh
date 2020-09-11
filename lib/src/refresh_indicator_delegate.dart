@@ -7,14 +7,14 @@ abstract class RefreshIndicatorDelegate {
   double get inactiveIndicatorExtent;
   double get refreshTriggerPullDistance;
 
-  Widget buildInactiveIndicator(BuildContext context,
-      BoxConstraints constraints, double percentageComplete);
+  Widget buildInactiveIndicator(
+      BuildContext context, BoxConstraints constraints);
   Widget buildDragIndicator(BuildContext context, double pulledExtent,
       BoxConstraints constraints, double percentageComplete);
   Widget buildArmedIndicator(BuildContext context, double pulledExtent,
       BoxConstraints constraints, double percentageComplete);
-  Widget buildRefreshIndicator(BuildContext context, BoxConstraints constraints,
-      double percentageComplete);
+  Widget buildRefreshIndicator(
+      BuildContext context, BoxConstraints constraints);
   Widget buildSuccessIndicator(BuildContext context, double pulledExtent,
       BoxConstraints constraints, double percentageComplete, dynamic payload);
   Widget buildFailureIndicator(BuildContext context, double pulledExtent,
@@ -22,7 +22,7 @@ abstract class RefreshIndicatorDelegate {
 
   Widget build(
     BuildContext context,
-    RefreshIndicatorState refreshState,
+    RefreshIndicatorMode refreshState,
     double pulledExtent,
     BoxConstraints constraints,
     double percentageComplete,
@@ -38,7 +38,7 @@ abstract class RefreshIndicatorDelegate {
   @nonVirtual
   Widget buildIndicator({
     BuildContext context,
-    RefreshIndicatorState refreshState,
+    RefreshIndicatorMode refreshState,
     double pulledExtent,
     BoxConstraints constraints,
     double percentageComplete,
@@ -50,22 +50,21 @@ abstract class RefreshIndicatorDelegate {
     Widget child;
     final percentageComplete = pulledExtent / refreshTriggerPullDistance;
     switch (refreshState) {
-      case RefreshIndicatorState.inactive:
-        child =
-            buildInactiveIndicator(context, constraints, percentageComplete);
+      case RefreshIndicatorMode.inactive:
+        child = buildInactiveIndicator(context, constraints);
         break;
-      case RefreshIndicatorState.drag:
+      case RefreshIndicatorMode.drag:
         child = buildDragIndicator(
             context, pulledExtent, constraints, percentageComplete);
         break;
-      case RefreshIndicatorState.armed:
+      case RefreshIndicatorMode.armed:
         child = buildArmedIndicator(
             context, pulledExtent, constraints, percentageComplete);
         break;
-      case RefreshIndicatorState.refresh:
-        child = buildRefreshIndicator(context, constraints, percentageComplete);
+      case RefreshIndicatorMode.refresh:
+        child = buildRefreshIndicator(context, constraints);
         break;
-      case RefreshIndicatorState.done:
+      case RefreshIndicatorMode.done:
         if (hasError) {
           child = buildFailureIndicator(
               context, pulledExtent, constraints, percentageComplete, failure);
@@ -107,7 +106,7 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
   @override
   Widget build(
     BuildContext context,
-    RefreshIndicatorState refreshState,
+    RefreshIndicatorMode refreshState,
     double pulledExtent,
     BoxConstraints constraints,
     double percentageComplete,
@@ -120,8 +119,8 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
         inactiveIndicatorExtent -
         refreshIndicatorExtent;
     if (percentageComplete >= 1 ||
-        refreshState == RefreshIndicatorState.done ||
-        refreshState == RefreshIndicatorState.refresh) {
+        refreshState == RefreshIndicatorMode.done ||
+        refreshState == RefreshIndicatorMode.refresh) {
       top += refreshIndicatorExtent;
     } else {
       top += percentageComplete * refreshIndicatorExtent;
@@ -142,8 +141,8 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
   }
 
   @override
-  Widget buildInactiveIndicator(BuildContext context,
-      BoxConstraints constraints, double percentageComplete) {
+  Widget buildInactiveIndicator(
+      BuildContext context, BoxConstraints constraints) {
     return Container(constraints: constraints);
   }
 
@@ -216,8 +215,8 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
   }
 
   @override
-  Widget buildRefreshIndicator(BuildContext context, BoxConstraints constraints,
-      double percentageComplete) {
+  Widget buildRefreshIndicator(
+      BuildContext context, BoxConstraints constraints) {
     return Center(
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -14,7 +14,7 @@ part 'refresh_trigger.dart';
 part 'refresh_controller.dart';
 part 'refresh_indicator_delegate.dart';
 
-enum RefreshIndicatorState {
+enum RefreshIndicatorMode {
   drag,
   done,
   armed,
@@ -22,13 +22,13 @@ enum RefreshIndicatorState {
   inactive,
 }
 
-typedef void SliverRefreshSuccess([dynamic payload]);
-typedef void SliverRefreshFailure([dynamic payload]);
-typedef Future<void> SliverRefreshCallback(
-    [SliverRefreshSuccess success, SliverRefreshFailure failure]);
+typedef void RefreshSuccess([dynamic payload]);
+typedef void RefreshFailure([dynamic payload]);
+typedef Future<void> RefreshCallback(
+    [RefreshSuccess success, RefreshFailure failure]);
 
-class SliverRefreshControl extends StatefulWidget {
-  SliverRefreshControl({
+class RefreshControl extends StatefulWidget {
+  RefreshControl({
     Key key,
     this.controller,
     @required this.onRefresh,
@@ -51,28 +51,28 @@ class SliverRefreshControl extends StatefulWidget {
         super(key: key);
 
   final EdgeInsetsGeometry margin;
+  final RefreshCallback onRefresh;
   final RefreshController controller;
-  final SliverRefreshCallback onRefresh;
   final RefreshIndicatorDelegate delegate;
 
   @override
-  _SliverRefreshControlState createState() => _SliverRefreshControlState();
+  _RefreshControlState createState() => _RefreshControlState();
 }
 
-class _SliverRefreshControlState extends State<SliverRefreshControl> {
+class _RefreshControlState extends State<RefreshControl> {
   dynamic failure;
   dynamic success;
   bool hasError = false;
   bool dragging = false;
   Future<void> refreshTask;
   RefreshController controller;
-  RefreshIndicatorState refreshState;
+  RefreshIndicatorMode refreshState;
   double latestIndicatorBoxExtent = 0.0;
 
   @override
   void initState() {
     super.initState();
-    refreshState = RefreshIndicatorState.inactive;
+    refreshState = RefreshIndicatorMode.inactive;
   }
 
   @override
@@ -82,7 +82,7 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
   }
 
   @override
-  void didUpdateWidget(SliverRefreshControl oldWidget) {
+  void didUpdateWidget(RefreshControl oldWidget) {
     super.didUpdateWidget(oldWidget);
     updateController(widget.controller ?? RefreshTrigger.of(context));
   }
@@ -132,7 +132,7 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
   void onDragEnd(DragEndDetails details) {
     if (dragging && mounted) {
       dragging = false;
-      if (refreshState == RefreshIndicatorState.armed) {
+      if (refreshState == RefreshIndicatorMode.armed) {
         startRefresh();
       }
     }
@@ -154,7 +154,7 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
       }
     });
     setState(() {
-      refreshState = RefreshIndicatorState.refresh;
+      refreshState = RefreshIndicatorMode.refresh;
     });
   }
 
@@ -170,63 +170,63 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
     }
   }
 
-  RefreshIndicatorState transitionNextState() {
-    RefreshIndicatorState nextState;
+  RefreshIndicatorMode transitionNextState() {
+    RefreshIndicatorMode nextState;
     switch (refreshState) {
-      case RefreshIndicatorState.inactive:
+      case RefreshIndicatorMode.inactive:
         if (latestIndicatorBoxExtent <= 0) {
-          return RefreshIndicatorState.inactive;
+          return RefreshIndicatorMode.inactive;
         } else {
-          nextState = RefreshIndicatorState.drag;
+          nextState = RefreshIndicatorMode.drag;
         }
         continue drag;
       drag:
-      case RefreshIndicatorState.drag:
+      case RefreshIndicatorMode.drag:
         if (latestIndicatorBoxExtent <= 0) {
-          return RefreshIndicatorState.inactive;
+          return RefreshIndicatorMode.inactive;
         } else if (latestIndicatorBoxExtent <
             widget.delegate.refreshTriggerPullDistance) {
-          return RefreshIndicatorState.drag;
+          return RefreshIndicatorMode.drag;
         } else {
-          nextState = RefreshIndicatorState.armed;
+          nextState = RefreshIndicatorMode.armed;
         }
         continue armed;
       armed:
-      case RefreshIndicatorState.armed:
+      case RefreshIndicatorMode.armed:
         if (refreshTask != null) {
-          nextState = RefreshIndicatorState.refresh;
+          nextState = RefreshIndicatorMode.refresh;
         } else if (latestIndicatorBoxExtent <
             widget.delegate.refreshTriggerPullDistance) {
-          return RefreshIndicatorState.drag;
+          return RefreshIndicatorMode.drag;
         } else {
-          return RefreshIndicatorState.armed;
+          return RefreshIndicatorMode.armed;
         }
         continue refresh;
       refresh:
-      case RefreshIndicatorState.refresh:
+      case RefreshIndicatorMode.refresh:
         if (refreshTask != null) {
-          return RefreshIndicatorState.refresh;
+          return RefreshIndicatorMode.refresh;
         } else {
-          nextState = RefreshIndicatorState.done;
+          nextState = RefreshIndicatorMode.done;
           if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
-            setState(() => refreshState = RefreshIndicatorState.done);
+            setState(() => refreshState = RefreshIndicatorMode.done);
           } else {
             WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              setState(() => refreshState = RefreshIndicatorState.done);
+              setState(() => refreshState = RefreshIndicatorMode.done);
             });
           }
         }
         continue done;
       done:
-      case RefreshIndicatorState.done:
+      case RefreshIndicatorMode.done:
         if (latestIndicatorBoxExtent > 0.0) {
-          return RefreshIndicatorState.done;
+          return RefreshIndicatorMode.done;
         } else {
           failure = null;
           success = null;
           hasError = false;
           refreshTask = null;
-          nextState = RefreshIndicatorState.inactive;
+          nextState = RefreshIndicatorMode.inactive;
         }
         break;
     }
@@ -239,10 +239,9 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
     return SliverRefresh(
       margin: widget.margin,
       inactiveIndicatorLayoutExtent: widget.delegate.inactiveIndicatorExtent,
-      refreshIndicatorLayoutExtent:
-          refreshState == RefreshIndicatorState.refresh
-              ? widget.delegate.refreshIndicatorExtent
-              : 0.0,
+      refreshIndicatorLayoutExtent: refreshState == RefreshIndicatorMode.refresh
+          ? widget.delegate.refreshIndicatorExtent
+          : 0.0,
       child: LayoutBuilder(
         builder: (context, constraints) {
           latestIndicatorBoxExtent =
