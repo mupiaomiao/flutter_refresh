@@ -81,7 +81,7 @@ class _RefreshTriggerState extends State<RefreshTrigger> {
                 widget.onLoad != null &&
                 widget.loadTriggerDistance != null &&
                 distance <= widget.loadTriggerDistance &&
-                (widget.shouldLoad?.call ?? false)) {
+                (widget.shouldLoad?.call() ?? false)) {
               loadTask = widget.onLoad()..whenComplete(() => loadTask = null);
             }
             return false;
