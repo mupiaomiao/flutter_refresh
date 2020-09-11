@@ -219,8 +219,7 @@ class _SliverRefreshControlState extends State<SliverRefreshControl> {
         continue done;
       done:
       case RefreshIndicatorState.done:
-        if (latestIndicatorBoxExtent >
-            widget.delegate.refreshTriggerPullDistance) {
+        if (latestIndicatorBoxExtent > 0.0) {
           return RefreshIndicatorState.done;
         } else {
           failure = null;
