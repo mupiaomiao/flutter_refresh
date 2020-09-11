@@ -117,9 +117,6 @@ class _RenderSliverRefresh extends RenderSliver
 
   @override
   void paint(PaintingContext paintContext, Offset offset) {
-    print('geometry: $geometry\r\n');
-    print('child size: ${child.size}\r\n');
-    print('constraints: $constraints\r\n\r\n\r\n');
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
       paintContext.paintChild(child, offset);
