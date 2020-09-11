@@ -94,7 +94,6 @@ class _RenderSliverRefresh extends RenderSliver
     child.layout(
       constraints.asBoxConstraints(
         maxExtent: layoutExtent + overscrolledExtent,
-        crossAxisExtent: constraints.crossAxisExtent,
       ),
       parentUsesSize: true,
     );
@@ -116,34 +115,11 @@ class _RenderSliverRefresh extends RenderSliver
     );
   }
 
-  void printConstraints() {
-    final stringBuffer = StringBuffer();
-    stringBuffer.writeln('axisDirection: ${constraints.axisDirection}');
-    stringBuffer.writeln('growthDirection: ${constraints.growthDirection}');
-    stringBuffer
-        .writeln('userScrollDirection: ${constraints.userScrollDirection}');
-    stringBuffer.writeln('scrollOffset: ${constraints.scrollOffset}');
-    stringBuffer
-        .writeln('precedingScrollExtent: ${constraints.precedingScrollExtent}');
-    stringBuffer.writeln('overlap: ${constraints.overlap}');
-    stringBuffer
-        .writeln('remainingPaintExtent: ${constraints.remainingPaintExtent}');
-    stringBuffer.writeln('crossAxisExtent: ${constraints.crossAxisExtent}');
-    stringBuffer
-        .writeln('crossAxisDirection: ${constraints.crossAxisDirection}');
-    stringBuffer.writeln(
-        'viewportMainAxisExtent: ${constraints.viewportMainAxisExtent}');
-    stringBuffer
-        .writeln('remainingCacheExtent: ${constraints.remainingCacheExtent}');
-    stringBuffer.writeln('cacheOrigin: ${constraints.cacheOrigin}');
-    print(stringBuffer.toString());
-  }
-
   @override
   void paint(PaintingContext paintContext, Offset offset) {
-    printConstraints();
-    print('offset: (${offset.dx}, ${offset.dy})');
-    print('\r\n\r\n');
+    print('geometry: $geometry\r\n');
+    print('child size: ${child.size}\r\n');
+    print('constraints: $constraints\r\n\r\n\r\n');
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
       paintContext.paintChild(child, offset);
