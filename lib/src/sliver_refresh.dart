@@ -137,10 +137,45 @@ class _RenderSliverRefresh extends RenderSliver
     );
   }
 
+  // @required this.axisDirection,
+  //   @required this.growthDirection,
+  //   @required this.userScrollDirection,
+  //   @required this.scrollOffset,
+  //   @required this.precedingScrollExtent,
+  //   @required this.overlap,
+  //   @required this.remainingPaintExtent,
+  //   @required this.crossAxisExtent,
+  //   @required this.crossAxisDirection,
+  //   @required this.viewportMainAxisExtent,
+  //   @required this.remainingCacheExtent,
+  //   @required this.cacheOrigin,
+
+  void printConstraints() {
+    final stringBuffer = StringBuffer();
+    stringBuffer.writeln('axisDirection: ${constraints.axisDirection}');
+    stringBuffer.writeln('growthDirection: ${constraints.growthDirection}');
+    stringBuffer
+        .writeln('userScrollDirection: ${constraints.userScrollDirection}');
+    stringBuffer.writeln('scrollOffset: ${constraints.scrollOffset}');
+    stringBuffer
+        .writeln('precedingScrollExtent: ${constraints.precedingScrollExtent}');
+    stringBuffer.writeln('overlap: ${constraints.overlap}');
+    stringBuffer
+        .writeln('remainingPaintExtent: ${constraints.remainingPaintExtent}');
+    stringBuffer.writeln('crossAxisExtent: ${constraints.crossAxisExtent}');
+    stringBuffer
+        .writeln('crossAxisDirection: ${constraints.crossAxisDirection}');
+    stringBuffer.writeln(
+        'viewportMainAxisExtent: ${constraints.viewportMainAxisExtent}');
+    stringBuffer
+        .writeln('remainingCacheExtent: ${constraints.remainingCacheExtent}');
+    stringBuffer.writeln('cacheOrigin: ${constraints.cacheOrigin}');
+    print(stringBuffer.toString());
+  }
+
   @override
   void paint(PaintingContext paintContext, Offset offset) {
-    print(
-        'offset: ${constraints.scrollOffset}, overlap: ${constraints.overlap}, height: ${child.size.height}');
+    printConstraints();
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
       paintContext.paintChild(
