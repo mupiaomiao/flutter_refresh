@@ -141,7 +141,8 @@ class _RenderSliverRefresh extends RenderSliver
   void paint(PaintingContext paintContext, Offset offset) {
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
-      paintContext.paintChild(child, offset.translate(margin.left, 0));
+      paintContext.paintChild(
+          child, offset.translate(margin.left, constraints.scrollOffset));
     }
   }
 
