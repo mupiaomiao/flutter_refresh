@@ -2,6 +2,7 @@ part of "refresh_control.dart";
 
 class RefreshTrigger extends StatefulWidget {
   final Widget child;
+  final bool Function() shouldLoad;
   final double loadTriggerDistance;
   final RefreshController controller;
   final Future<void> Function() onLoad;
@@ -11,6 +12,7 @@ class RefreshTrigger extends StatefulWidget {
     this.child,
     this.onLoad,
     this.controller,
+    this.shouldLoad,
     this.loadTriggerDistance,
   }) : super(key: key);
 
@@ -74,11 +76,12 @@ class _RefreshTriggerState extends State<RefreshTrigger> {
           child: widget.child,
           onNotification: (notification) {
             final metrics = notification.metrics;
+            final distance = metrics.maxScrollExtent - metrics.pixels;
             if (loadTask == null &&
                 widget.onLoad != null &&
                 widget.loadTriggerDistance != null &&
-                metrics.maxScrollExtent - metrics.pixels <=
-                    widget.loadTriggerDistance) {
+                distance <= widget.loadTriggerDistance &&
+                (widget.shouldLoad?.call ?? false)) {
               loadTask = widget.onLoad()..whenComplete(() => loadTask = null);
             }
             return false;
