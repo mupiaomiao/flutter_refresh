@@ -13,39 +13,12 @@ class RefreshController {
   void dispose() {
     if (_disposed == false) {
       _disposed = true;
-      _scrolls.clear();
       _dragEnds.clear();
       _dragDowns.clear();
       _dragStarts.clear();
       _dragCancels.clear();
       _dragUpdates.clear();
       _startRefreshes.clear();
-    }
-  }
-
-  @protected
-  void scroll(ScrollNotification notification) {
-    assert(_disposed == false);
-    for (final callback in _scrolls) {
-      try {
-        callback(notification);
-      } catch (e) {}
-    }
-  }
-
-  @protected
-  void onScroll(void Function(ScrollNotification notification) listener) {
-    assert(_disposed == false);
-    if (listener != null) {
-      _scrolls.add(listener);
-    }
-  }
-
-  @protected
-  void offScroll(void Function(ScrollNotification notification) listener) {
-    assert(_disposed == false);
-    if (listener != null) {
-      _scrolls.remove(listener);
     }
   }
 
@@ -202,5 +175,4 @@ class RefreshController {
   final _dragDowns = HashSet<void Function(DragDownDetails details)>();
   final _dragStarts = HashSet<void Function(DragStartDetails details)>();
   final _dragUpdates = HashSet<void Function(DragUpdateDetails details)>();
-  final _scrolls = HashSet<void Function(ScrollNotification notification)>();
 }

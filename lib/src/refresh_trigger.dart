@@ -2,12 +2,16 @@ part of "refresh_control.dart";
 
 class RefreshTrigger extends StatefulWidget {
   final Widget child;
+  final double loadTriggerDistance;
   final RefreshController controller;
+  final Future<void> Function() onLoad;
 
   const RefreshTrigger({
     Key key,
     this.child,
+    this.onLoad,
     this.controller,
+    this.loadTriggerDistance,
   }) : super(key: key);
 
   static RefreshController of(BuildContext context) {
@@ -22,6 +26,7 @@ class RefreshTrigger extends StatefulWidget {
 }
 
 class _RefreshTriggerState extends State<RefreshTrigger> {
+  Future<void> loadTask;
   void Function() disposer;
   RefreshController controller;
 
@@ -68,7 +73,14 @@ class _RefreshTriggerState extends State<RefreshTrigger> {
         child: NotificationListener<ScrollNotification>(
           child: widget.child,
           onNotification: (notification) {
-            controller.scroll(notification);
+            final metrics = notification.metrics;
+            if (loadTask == null &&
+                widget.onLoad != null &&
+                widget.loadTriggerDistance != null &&
+                metrics.maxScrollExtent - metrics.pixels <=
+                    widget.loadTriggerDistance) {
+              loadTask = widget.onLoad()..whenComplete(() => loadTask = null);
+            }
             return false;
           },
         ),
