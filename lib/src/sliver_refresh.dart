@@ -176,6 +176,8 @@ class _RenderSliverRefresh extends RenderSliver
   @override
   void paint(PaintingContext paintContext, Offset offset) {
     printConstraints();
+    print('offset: (${offset.dx}, ${offset.dy})');
+    print('\r\n\r\n');
     if (constraints.overlap < 0.0 ||
         constraints.scrollOffset + child.size.height > 0) {
       paintContext.paintChild(
