@@ -150,9 +150,11 @@ class _RefreshControlState extends State<RefreshControl> {
         refreshState = transitionNextState();
       }
     });
-    setState(() {
-      refreshState = RefreshIndicatorMode.refresh;
-    });
+    if (mounted) {
+      setState(() {
+        refreshState = RefreshIndicatorMode.refresh;
+      });
+    }
   }
 
   void startRefresh() {
@@ -206,10 +208,14 @@ class _RefreshControlState extends State<RefreshControl> {
         } else {
           nextState = RefreshIndicatorMode.done;
           if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
-            setState(() => refreshState = RefreshIndicatorMode.done);
+            if (mounted) {
+              setState(() => refreshState = RefreshIndicatorMode.done);
+            }
           } else {
             WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              setState(() => refreshState = RefreshIndicatorMode.done);
+              if (mounted) {
+                setState(() => refreshState = RefreshIndicatorMode.done);
+              }
             });
           }
         }
