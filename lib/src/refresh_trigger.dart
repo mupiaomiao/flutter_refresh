@@ -2,18 +2,12 @@ part of "refresh_control.dart";
 
 class RefreshTrigger extends StatefulWidget {
   final Widget child;
-  final bool Function() shouldLoad;
-  final double loadTriggerDistance;
   final RefreshController controller;
-  final Future<void> Function() onLoad;
 
   const RefreshTrigger({
     Key key,
     this.child,
-    this.onLoad,
     this.controller,
-    this.shouldLoad,
-    this.loadTriggerDistance,
   }) : super(key: key);
 
   static RefreshController of(BuildContext context) {
@@ -28,7 +22,6 @@ class RefreshTrigger extends StatefulWidget {
 }
 
 class _RefreshTriggerState extends State<RefreshTrigger> {
-  Future<void> loadTask;
   void Function() disposer;
   RefreshController controller;
 
@@ -72,26 +65,19 @@ class _RefreshTriggerState extends State<RefreshTrigger> {
     return _RefreshTriggerScope(
       state: this,
       child: UIGestureDetector(
-        child: NotificationListener<ScrollNotification>(
-          child: widget.child,
-          onNotification: (notification) {
-            final metrics = notification.metrics;
-            final distance = metrics.maxScrollExtent - metrics.pixels;
-            if (loadTask == null &&
-                widget.onLoad != null &&
-                widget.loadTriggerDistance != null &&
-                distance <= widget.loadTriggerDistance &&
-                (widget.shouldLoad?.call() ?? false)) {
-              loadTask = widget.onLoad()..whenComplete(() => loadTask = null);
-            }
-            return false;
-          },
-        ),
         onVerticalDragCancel: () => controller.dragCancel(),
         onVerticalDragEnd: (details) => controller.dragEnd(details),
         onVerticalDragDown: (details) => controller.dragDown(details),
         onVerticalDragStart: (details) => controller.dragStart(details),
         onVerticalDragUpdate: (details) => controller.dragUpdate(details),
+        child: NotificationListener<ScrollNotification>(
+          child: widget.child,
+          onNotification: (notification) {
+            final metrics = notification.metrics;
+            controller.onScroll(metrics.maxScrollExtent - metrics.pixels);
+            return false;
+          },
+        ),
       ),
     );
   }

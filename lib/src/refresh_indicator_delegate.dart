@@ -20,7 +20,7 @@ abstract class RefreshIndicatorDelegate {
   Widget buildFailureIndicator(BuildContext context, double pulledExtent,
       BoxConstraints constraints, double percentageComplete, dynamic payload);
 
-  Widget build(
+  Widget wrapper(
     BuildContext context,
     RefreshIndicatorMode refreshState,
     double pulledExtent,
@@ -34,9 +34,7 @@ abstract class RefreshIndicatorDelegate {
     return child;
   }
 
-  @protected
-  @nonVirtual
-  Widget buildIndicator({
+  Widget _buildIndicator({
     BuildContext context,
     RefreshIndicatorMode refreshState,
     double pulledExtent,
@@ -77,7 +75,7 @@ abstract class RefreshIndicatorDelegate {
         child = Container();
         break;
     }
-    return build(
+    return wrapper(
       context,
       refreshState,
       pulledExtent,
@@ -91,20 +89,54 @@ abstract class RefreshIndicatorDelegate {
   }
 }
 
+const double kRefreshIndicatorSize = 12.0;
 const double kRefreshIndicatorExtent = 30.0;
 const double kInactiveIndicatorExtent = 0.0;
 const double kActivityIndicatorMargin = 16.0;
 const double kRefreshTriggerPullDistance = 60.0;
+const Color kRefreshIndicatorColor = Colors.white;
+const TextStyle kRefreshTextStyle =
+    TextStyle(color: Colors.white, fontSize: 12);
+const TextStyle kRefreshSuccessTextStyle =
+    TextStyle(color: Colors.white, fontSize: 12);
+const TextStyle kRefreshFailureTextStyle =
+    TextStyle(color: Colors.redAccent, fontSize: 12);
+const IconThemeData kRefreshSuccessIconTheme =
+    IconThemeData(color: Colors.white, size: 15);
+const IconThemeData kRefreshFailureIconTheme =
+    IconThemeData(color: Colors.redAccent, size: 15);
 
-class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
-  const _RefreshIndicatorDelegate();
+class DefaultRefreshIndicatorDelegate extends RefreshIndicatorDelegate {
+  const DefaultRefreshIndicatorDelegate({
+    this.textStyle = kRefreshTextStyle,
+    this.successTextStyle = kRefreshSuccessTextStyle,
+    this.failureTextStyle = kRefreshFailureTextStyle,
+    this.successIconTheme = kRefreshSuccessIconTheme,
+    this.failureIconTheme = kRefreshFailureIconTheme,
+    this.refreshIndicatorSize = kRefreshIndicatorSize,
+    this.refreshIndicatorColor = kRefreshIndicatorColor,
+  })  : assert(textStyle != null),
+        assert(successTextStyle != null),
+        assert(failureTextStyle != null),
+        assert(successIconTheme != null),
+        assert(failureIconTheme != null),
+        assert(refreshIndicatorSize != null),
+        assert(refreshIndicatorSize > 0.0),
+        assert(refreshIndicatorColor != null);
 
+  final TextStyle textStyle;
+  final TextStyle successTextStyle;
+  final TextStyle failureTextStyle;
+  final double refreshIndicatorSize;
+  final Color refreshIndicatorColor;
+  final IconThemeData successIconTheme;
+  final IconThemeData failureIconTheme;
   final double refreshIndicatorExtent = kRefreshIndicatorExtent;
   final double inactiveIndicatorExtent = kInactiveIndicatorExtent;
   final double refreshTriggerPullDistance = kRefreshTriggerPullDistance;
 
   @override
-  Widget build(
+  Widget wrapper(
     BuildContext context,
     RefreshIndicatorMode refreshState,
     double pulledExtent,
@@ -115,25 +147,21 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
     dynamic failure,
     Widget child,
   ) {
-    double top = kActivityIndicatorMargin +
-        inactiveIndicatorExtent -
-        refreshIndicatorExtent;
-    if (percentageComplete >= 1 ||
-        refreshState == RefreshIndicatorMode.done ||
-        refreshState == RefreshIndicatorMode.refresh) {
-      top += refreshIndicatorExtent;
-    } else {
-      top += percentageComplete * refreshIndicatorExtent;
-    }
-    return Center(
+    return Container(
+      constraints: constraints,
       child: Stack(
         overflow: Overflow.visible,
         children: <Widget>[
           Positioned(
-            top: top,
             left: 0.0,
             right: 0.0,
-            child: child,
+            bottom: 0.0,
+            child: Container(
+              child: Center(
+                child: child,
+              ),
+              height: refreshIndicatorExtent,
+            ),
           ),
         ],
       ),
@@ -143,7 +171,7 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
   @override
   Widget buildInactiveIndicator(
       BuildContext context, BoxConstraints constraints) {
-    return Container(constraints: constraints);
+    return Container();
   }
 
   @override
@@ -159,22 +187,18 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
-              width: 12,
-              height: 12,
+              width: refreshIndicatorSize,
+              height: refreshIndicatorSize,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
                 value: percentageComplete * 0.9,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(refreshIndicatorColor),
               ),
             ),
             Padding(
               padding: EdgeInsets.only(left: 5),
-              child: Text(
-                '下拉刷新',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black87,
-                ),
-              ),
+              child: Text('下拉刷新', style: textStyle),
             )
           ],
         ),
@@ -192,22 +216,17 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 12,
-            height: 12,
+            width: refreshIndicatorSize,
+            height: refreshIndicatorSize,
             child: CircularProgressIndicator(
               value: 0.9,
               strokeWidth: 1.5,
+              valueColor: AlwaysStoppedAnimation<Color>(refreshIndicatorColor),
             ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 5),
-            child: Text(
-              '释放刷新',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.black87,
-              ),
-            ),
+            child: Text('释放刷新', style: textStyle),
           )
         ],
       ),
@@ -224,21 +243,16 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 12,
-            height: 12,
+            width: refreshIndicatorSize,
+            height: refreshIndicatorSize,
             child: CircularProgressIndicator(
               strokeWidth: 1.5,
+              valueColor: AlwaysStoppedAnimation<Color>(refreshIndicatorColor),
             ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 5),
-            child: Text(
-              '正在刷新',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.black87,
-              ),
-            ),
+            child: Text('正在刷新', style: textStyle),
           )
         ],
       ),
@@ -254,20 +268,13 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            Icons.check_circle,
-            size: 15,
-            color: Theme.of(context).primaryColor,
+          IconTheme(
+            data: successIconTheme,
+            child: Icon(Icons.check_circle),
           ),
           Padding(
             padding: EdgeInsets.only(left: 5),
-            child: Text(
-              '刷新成功',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.black87,
-              ),
-            ),
+            child: Text('刷新成功', style: successTextStyle),
           )
         ],
       ),
@@ -283,20 +290,13 @@ class _RefreshIndicatorDelegate extends RefreshIndicatorDelegate {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error,
-            size: 15,
-            color: Colors.red,
+          IconTheme(
+            data: failureIconTheme,
+            child: Icon(Icons.error),
           ),
           Padding(
             padding: EdgeInsets.only(left: 5),
-            child: Text(
-              '刷新失败',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.black87,
-              ),
-            ),
+            child: Text('刷新失败', style: failureTextStyle),
           )
         ],
       ),

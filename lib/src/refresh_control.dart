@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:collection';
-import 'package:flutter/foundation.dart';
-
-import 'sliver_refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_gestures/flutter_gestures.dart';
 
+import 'sliver_refresh.dart';
+
+part 'load_control.dart';
 part 'refresh_trigger.dart';
 part 'refresh_controller.dart';
+part 'load_indicator_delegate.dart';
 part 'refresh_indicator_delegate.dart';
 
 enum RefreshIndicatorMode {
@@ -29,7 +29,7 @@ class RefreshFeedback {
   final RefreshSuccess success;
   final RefreshFailure failure;
 
-  const RefreshFeedback(
+  const RefreshFeedback._(
     this.success,
     this.failure,
   )   : assert(success != null),
@@ -43,7 +43,7 @@ class RefreshControl extends StatefulWidget {
     Key key,
     this.controller,
     @required this.onRefresh,
-    this.delegate = const _RefreshIndicatorDelegate(),
+    this.delegate = const DefaultRefreshIndicatorDelegate(),
   })  : assert(delegate != null),
         assert(onRefresh != null),
         assert(delegate.refreshIndicatorExtent != null),
@@ -81,7 +81,7 @@ class _RefreshControlState extends State<RefreshControl> {
   @override
   void initState() {
     super.initState();
-    feedback = RefreshFeedback(
+    feedback = RefreshFeedback._(
       ([payload]) {
         hasError = false;
         success = payload;
@@ -107,6 +107,10 @@ class _RefreshControlState extends State<RefreshControl> {
   }
 
   void updateController(RefreshController newController) {
+    assert(
+      newController != null,
+      "The 'RefreshControl' must have a 'RefreshController' or be integrated with 'RefreshTrigger'.",
+    );
     if (!identical(controller, newController)) {
       if (controller != null) {
         controller.offDragEnd(onDragEnd);
@@ -267,7 +271,7 @@ class _RefreshControlState extends State<RefreshControl> {
           latestIndicatorBoxExtent =
               constraints.maxHeight - widget.delegate.inactiveIndicatorExtent;
           refreshState = transitionNextState();
-          return widget.delegate.buildIndicator(
+          return widget.delegate._buildIndicator(
             context: context,
             failure: failure,
             success: success,

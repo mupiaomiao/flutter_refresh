@@ -6,19 +6,89 @@ class RefreshController {
     for (final callback in _startRefreshes) {
       try {
         callback();
-      } catch (e) {}
+      } catch (e, s) {
+        assert(() {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              stack: s,
+              exception: e,
+              library: "flutter refresh",
+            ),
+          );
+          return true;
+        }());
+      }
+    }
+  }
+
+  void startLoad() {
+    assert(_disposed == false);
+    for (final loader in _loaders) {
+      try {
+        loader.load();
+      } catch (e, s) {
+        assert(() {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              stack: s,
+              exception: e,
+              library: "flutter refresh",
+            ),
+          );
+          return true;
+        }());
+      }
     }
   }
 
   void dispose() {
     if (_disposed == false) {
       _disposed = true;
+      _loaders.clear();
       _dragEnds.clear();
       _dragDowns.clear();
       _dragStarts.clear();
       _dragCancels.clear();
       _dragUpdates.clear();
       _startRefreshes.clear();
+    }
+  }
+
+  @protected
+  void onScroll(double distance) {
+    assert(_disposed == false);
+    assert(distance != null);
+    for (final loader in _loaders) {
+      try {
+        if (distance <= loader.loadTriggerDistance) loader.load();
+      } catch (e, s) {
+        assert(() {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              stack: s,
+              exception: e,
+              library: "flutter refresh",
+            ),
+          );
+          return true;
+        }());
+      }
+    }
+  }
+
+  @protected
+  void onLoad(_Loader loader) {
+    assert(_disposed == false);
+    if (loader != null) {
+      _loaders.add(loader);
+    }
+  }
+
+  @protected
+  void offLoad(_Loader loader) {
+    assert(_disposed == false);
+    if (loader != null) {
+      _loaders.remove(loader);
     }
   }
 
@@ -169,10 +239,11 @@ class RefreshController {
   }
 
   bool _disposed = false;
-  final _dragCancels = HashSet<void Function()>();
-  final _startRefreshes = HashSet<void Function()>();
-  final _dragEnds = HashSet<void Function(DragEndDetails details)>();
-  final _dragDowns = HashSet<void Function(DragDownDetails details)>();
-  final _dragStarts = HashSet<void Function(DragStartDetails details)>();
-  final _dragUpdates = HashSet<void Function(DragUpdateDetails details)>();
+  final _loaders = List<_Loader>();
+  final _dragCancels = List<void Function()>();
+  final _startRefreshes = List<void Function()>();
+  final _dragEnds = List<void Function(DragEndDetails details)>();
+  final _dragDowns = List<void Function(DragDownDetails details)>();
+  final _dragStarts = List<void Function(DragStartDetails details)>();
+  final _dragUpdates = List<void Function(DragUpdateDetails details)>();
 }
