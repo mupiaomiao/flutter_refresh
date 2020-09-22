@@ -24,8 +24,19 @@ enum RefreshIndicatorMode {
 
 typedef void RefreshSuccess([dynamic payload]);
 typedef void RefreshFailure([dynamic payload]);
-typedef Future<void> RefreshCallback(
-    [RefreshSuccess success, RefreshFailure failure]);
+
+class RefreshFeedback {
+  final RefreshSuccess success;
+  final RefreshFailure failure;
+
+  const RefreshFeedback(
+    this.success,
+    this.failure,
+  )   : assert(success != null),
+        assert(failure != null);
+}
+
+typedef Future<void> RefreshCallback([RefreshFeedback feedback]);
 
 class RefreshControl extends StatefulWidget {
   RefreshControl({
@@ -61,6 +72,7 @@ class _RefreshControlState extends State<RefreshControl> {
   dynamic success;
   bool hasError = false;
   bool dragging = false;
+  RefreshFeedback feedback;
   Future<void> refreshTask;
   RefreshController controller;
   RefreshIndicatorMode refreshState;
@@ -69,6 +81,16 @@ class _RefreshControlState extends State<RefreshControl> {
   @override
   void initState() {
     super.initState();
+    feedback = RefreshFeedback(
+      ([payload]) {
+        hasError = false;
+        success = payload;
+      },
+      ([payload]) {
+        hasError = true;
+        failure = payload;
+      },
+    );
     refreshState = RefreshIndicatorMode.inactive;
   }
 
@@ -104,6 +126,7 @@ class _RefreshControlState extends State<RefreshControl> {
 
   @override
   void dispose() {
+    feedback = null;
     if (controller != null) {
       controller.offDragEnd(onDragEnd);
       controller.offRefresh(startRefresh);
@@ -137,19 +160,14 @@ class _RefreshControlState extends State<RefreshControl> {
 
   void refresh() {
     if (widget.onRefresh == null) return;
-    refreshTask = widget.onRefresh(([success]) {
-      hasError = false;
-      success = success;
-    }, ([error]) {
-      error = error;
-      hasError = true;
-    });
-    refreshTask.whenComplete(() {
-      if (mounted) {
-        setState(() => refreshTask = null);
-        refreshState = transitionNextState();
-      }
-    });
+    refreshTask = widget.onRefresh(feedback).whenComplete(
+      () {
+        if (mounted) {
+          setState(() => refreshTask = null);
+          refreshState = transitionNextState();
+        }
+      },
+    );
     if (mounted) {
       setState(() {
         refreshState = RefreshIndicatorMode.refresh;
