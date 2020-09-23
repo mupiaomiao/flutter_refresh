@@ -7,30 +7,23 @@ class SliverRefresh extends SingleChildRenderObjectWidget {
     Key key,
     Widget child,
     this.refreshIndicatorLayoutExtent,
-    this.inactiveIndicatorLayoutExtent,
-  })  : assert(inactiveIndicatorLayoutExtent != null),
-        assert(inactiveIndicatorLayoutExtent >= 0),
-        assert(refreshIndicatorLayoutExtent != null),
+  })  : assert(refreshIndicatorLayoutExtent != null),
         assert(refreshIndicatorLayoutExtent >= 0.0),
         super(key: key, child: child);
 
   final double refreshIndicatorLayoutExtent;
-  final double inactiveIndicatorLayoutExtent;
 
   @override
   _RenderSliverRefresh createRenderObject(BuildContext context) {
     return _RenderSliverRefresh(
       refreshIndicatorLayoutExtent: refreshIndicatorLayoutExtent,
-      inactiveIndicatorLayoutExtent: inactiveIndicatorLayoutExtent,
     );
   }
 
   @override
   void updateRenderObject(
       BuildContext context, covariant _RenderSliverRefresh renderObject) {
-    renderObject
-      ..refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent
-      ..inactiveIndicatorLayoutExtent = inactiveIndicatorLayoutExtent;
+    renderObject..refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent;
   }
 }
 
@@ -39,14 +32,9 @@ class _RenderSliverRefresh extends RenderSliver
   _RenderSliverRefresh({
     RenderBox child,
     @required double refreshIndicatorLayoutExtent,
-    @required double inactiveIndicatorLayoutExtent,
-  })  : assert(inactiveIndicatorLayoutExtent != null),
-        assert(inactiveIndicatorLayoutExtent >= 0.0),
-        assert(refreshIndicatorLayoutExtent != null),
+  })  : assert(refreshIndicatorLayoutExtent != null),
         assert(refreshIndicatorLayoutExtent >= 0.0),
-        _refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent,
-        layoutExtentOffsetCompensation = inactiveIndicatorLayoutExtent,
-        _inactiveIndicatorLayoutExtent = inactiveIndicatorLayoutExtent {
+        _refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent {
     this.child = child;
   }
 
@@ -60,17 +48,6 @@ class _RenderSliverRefresh extends RenderSliver
     markNeedsLayout();
   }
 
-  double get inactiveIndicatorLayoutExtent => _inactiveIndicatorLayoutExtent;
-  double _inactiveIndicatorLayoutExtent;
-  set inactiveIndicatorLayoutExtent(double value) {
-    assert(value != null);
-    assert(value >= 0.0);
-    if (value == _inactiveIndicatorLayoutExtent) return;
-    _inactiveIndicatorLayoutExtent = value;
-    layoutExtentOffsetCompensation = value;
-    markNeedsLayout();
-  }
-
   double layoutExtentOffsetCompensation = 0.0;
 
   @override
@@ -79,8 +56,7 @@ class _RenderSliverRefresh extends RenderSliver
     assert(constraints.axisDirection == AxisDirection.down);
     assert(constraints.growthDirection == GrowthDirection.forward);
 
-    final double layoutExtent =
-        refreshIndicatorLayoutExtent + inactiveIndicatorLayoutExtent;
+    final double layoutExtent = refreshIndicatorLayoutExtent;
     if (layoutExtent != layoutExtentOffsetCompensation) {
       geometry = SliverGeometry(
         scrollOffsetCorrection: layoutExtent - layoutExtentOffsetCompensation,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -16,179 +15,130 @@ part 'refresh_indicator_delegate.dart';
 
 enum RefreshIndicatorMode {
   drag,
-  done,
   armed,
   refresh,
+  success,
+  failure,
   inactive,
 }
 
-typedef void RefreshSuccess([dynamic payload]);
-typedef void RefreshFailure([dynamic payload]);
-
-class RefreshFeedback {
-  final RefreshSuccess success;
-  final RefreshFailure failure;
-
-  const RefreshFeedback._(
-    this.success,
-    this.failure,
-  )   : assert(success != null),
-        assert(failure != null);
-}
-
-typedef Future<void> RefreshCallback([RefreshFeedback feedback]);
+typedef Future<void> RefreshCallback();
 
 class RefreshControl extends StatefulWidget {
   RefreshControl({
     Key key,
-    this.controller,
     @required this.onRefresh,
-    this.delegate = const DefaultRefreshIndicatorDelegate(),
+    this.delegate = const RefreshIndicatorDelegate(),
   })  : assert(delegate != null),
         assert(onRefresh != null),
-        assert(delegate.refreshIndicatorExtent != null),
-        assert(delegate.refreshIndicatorExtent >= 0.0),
-        assert(delegate.refreshTriggerPullDistance != null),
-        assert(delegate.refreshTriggerPullDistance >= 0.0),
-        assert(delegate.inactiveIndicatorExtent != null),
-        assert(delegate.inactiveIndicatorExtent >= 0.0),
-        assert(
-            delegate.refreshTriggerPullDistance >=
-                delegate.refreshIndicatorExtent,
-            'The refresh indicator cannot take more space in its final state '
-            'than the amount initially created by overscrolling.'),
         super(key: key);
 
   final RefreshCallback onRefresh;
-  final RefreshController controller;
   final RefreshIndicatorDelegate delegate;
 
   @override
   _RefreshControlState createState() => _RefreshControlState();
 }
 
-class _RefreshControlState extends State<RefreshControl> {
+class _RefreshControlState extends State<RefreshControl> implements _Refresher {
   dynamic failure;
   dynamic success;
-  bool hasError = false;
+  bool isFailed = false;
   bool dragging = false;
-  RefreshFeedback feedback;
+  void Function() disposer;
   Future<void> refreshTask;
-  RefreshController controller;
+  Future<void> delayFuture;
   RefreshIndicatorMode refreshState;
   double latestIndicatorBoxExtent = 0.0;
 
   @override
   void initState() {
     super.initState();
-    feedback = RefreshFeedback._(
-      ([payload]) {
-        hasError = false;
-        success = payload;
-      },
-      ([payload]) {
-        hasError = true;
-        failure = payload;
-      },
-    );
     refreshState = RefreshIndicatorMode.inactive;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    updateController(widget.controller ?? RefreshTrigger.of(context));
+    if (disposer != null) {
+      disposer();
+      disposer = null;
+    }
+    final trigger = _RefreshTriggerScope.of(context);
+    assert(
+      trigger != null,
+      "RefreshControl must be integrated with a RefreshTrigger.",
+    );
+    trigger.registerRefresher(this);
+    disposer = () => trigger.unregisterRefresher(this);
   }
 
   @override
-  void didUpdateWidget(RefreshControl oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    updateController(widget.controller ?? RefreshTrigger.of(context));
-  }
-
-  void updateController(RefreshController newController) {
-    assert(
-      newController != null,
-      "The 'RefreshControl' must have a 'RefreshController' or be integrated with 'RefreshTrigger'.",
-    );
-    if (!identical(controller, newController)) {
-      if (controller != null) {
-        controller.offDragEnd(onDragEnd);
-        controller.offRefresh(startRefresh);
-        controller.offDragStart(onDragStart);
-        controller.offDragCancel(onDragCancel);
-      }
-      controller = newController;
-      if (controller != null) {
-        controller.onDragEnd(onDragEnd);
-        controller.onRefresh(startRefresh);
-        controller.onDragStart(onDragStart);
-        controller.onDragCancel(onDragCancel);
-      }
+  void setState(VoidCallback fn) {
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      if (mounted) super.setState(fn);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        if (mounted) super.setState(fn);
+      });
     }
   }
 
   @override
   void dispose() {
-    feedback = null;
-    if (controller != null) {
-      controller.offDragEnd(onDragEnd);
-      controller.offRefresh(startRefresh);
-      controller.offDragStart(onDragStart);
-      controller.offDragCancel(onDragCancel);
-      controller = null;
+    if (disposer != null) {
+      disposer();
+      disposer = null;
     }
     super.dispose();
   }
 
-  void onDragCancel() {
-    if (dragging && mounted) {
-      dragging = false;
-    }
+  bool get isRefreshing => refreshTask != null;
+
+  void dragCancel() {
+    if (dragging) dragging = false;
   }
 
-  void onDragStart(DragStartDetails details) {
-    if (!dragging && mounted) {
-      dragging = true;
-    }
+  void dragStart(DragStartDetails details) {
+    if (!dragging) dragging = true;
   }
 
-  void onDragEnd(DragEndDetails details) {
-    if (dragging && mounted) {
+  void dragEnd(DragEndDetails details) {
+    if (dragging) {
       dragging = false;
-      if (refreshState == RefreshIndicatorMode.armed) {
-        startRefresh();
-      }
+      if (refreshState == RefreshIndicatorMode.armed) refresh();
     }
   }
 
   void refresh() {
-    if (widget.onRefresh == null) return;
-    refreshTask = widget.onRefresh(feedback).whenComplete(
-      () {
-        if (mounted) {
-          setState(() => refreshTask = null);
-          refreshState = transitionNextState();
-        }
-      },
-    );
-    if (mounted) {
+    if (refreshTask != null || widget.onRefresh == null) return;
+    refreshTask = widget.onRefresh().whenComplete(() {
+      final milliseconds = isFailed
+          ? widget.delegate.failureDuration
+          : widget.delegate.successDuration;
+      Future<void> future;
+      if (milliseconds > 0) {
+        future = Future.delayed(
+          Duration(milliseconds: milliseconds),
+          () => setState(() => delayFuture = null),
+        );
+      }
       setState(() {
-        refreshState = RefreshIndicatorMode.refresh;
+        refreshTask = null;
+        delayFuture = future;
       });
-    }
+    });
+    setState(() => refreshState = RefreshIndicatorMode.refresh);
   }
 
-  void startRefresh() {
-    if (refreshTask == null) {
-      if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
-        refresh();
-      } else {
-        SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-          refresh();
-        });
-      }
-    }
+  void failedToRefresh(dynamic payload) {
+    isFailed = true;
+    failure = payload;
+  }
+
+  void refreshSuccessfully(dynamic payload) {
+    isFailed = false;
+    success = payload;
   }
 
   RefreshIndicatorMode transitionNextState() {
@@ -227,29 +177,35 @@ class _RefreshControlState extends State<RefreshControl> {
       case RefreshIndicatorMode.refresh:
         if (refreshTask != null) {
           return RefreshIndicatorMode.refresh;
-        } else {
-          nextState = RefreshIndicatorMode.done;
-          if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
-            if (mounted) {
-              setState(() => refreshState = RefreshIndicatorMode.done);
-            }
-          } else {
-            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              if (mounted) {
-                setState(() => refreshState = RefreshIndicatorMode.done);
-              }
-            });
-          }
         }
-        continue done;
-      done:
-      case RefreshIndicatorMode.done:
-        if (latestIndicatorBoxExtent > 0.0) {
-          return RefreshIndicatorMode.done;
+        if (isFailed) {
+          nextState = RefreshIndicatorMode.failure;
+          continue failure;
+        } else {
+          nextState = RefreshIndicatorMode.success;
+          continue success;
+        }
+        break;
+      success:
+      case RefreshIndicatorMode.success:
+        if (delayFuture != null || latestIndicatorBoxExtent > 0.0) {
+          return RefreshIndicatorMode.success;
         } else {
           failure = null;
           success = null;
-          hasError = false;
+          isFailed = false;
+          refreshTask = null;
+          nextState = RefreshIndicatorMode.inactive;
+        }
+        break;
+      failure:
+      case RefreshIndicatorMode.failure:
+        if (delayFuture != null || latestIndicatorBoxExtent > 0.0) {
+          return RefreshIndicatorMode.failure;
+        } else {
+          failure = null;
+          success = null;
+          isFailed = false;
           refreshTask = null;
           nextState = RefreshIndicatorMode.inactive;
         }
@@ -259,23 +215,27 @@ class _RefreshControlState extends State<RefreshControl> {
     return nextState;
   }
 
+  double get refreshIndicatorLayoutExtent {
+    if (refreshTask != null) return widget.delegate.refreshIndicatorExtent;
+    if (delayFuture != null) {
+      if (isFailed) return widget.delegate.failureIndicatorExtent;
+      return widget.delegate.successIndicatorExtent;
+    }
+    return 0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SliverRefresh(
-      inactiveIndicatorLayoutExtent: widget.delegate.inactiveIndicatorExtent,
-      refreshIndicatorLayoutExtent: refreshState == RefreshIndicatorMode.refresh
-          ? widget.delegate.refreshIndicatorExtent
-          : 0.0,
+      refreshIndicatorLayoutExtent: refreshIndicatorLayoutExtent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          latestIndicatorBoxExtent =
-              constraints.maxHeight - widget.delegate.inactiveIndicatorExtent;
+          latestIndicatorBoxExtent = constraints.maxHeight;
           refreshState = transitionNextState();
           return widget.delegate._buildIndicator(
             context: context,
             failure: failure,
             success: success,
-            hasError: hasError,
             constraints: constraints,
             refreshState: refreshState,
             pulledExtent: latestIndicatorBoxExtent,
@@ -284,4 +244,14 @@ class _RefreshControlState extends State<RefreshControl> {
       ),
     );
   }
+}
+
+abstract class _Refresher {
+  void refresh();
+  void dragCancel();
+  bool get isRefreshing;
+  void dragEnd(DragEndDetails details);
+  void failedToRefresh(dynamic payload);
+  void dragStart(DragStartDetails details);
+  void refreshSuccessfully(dynamic payload);
 }

@@ -17,38 +17,18 @@ enum LoadIndicatorMode {
   noMoreData,
 }
 
-class LoadFeedback {
-  final void Function() noData;
-  final void Function() noMoreData;
-  final void Function([dynamic error]) failure;
-
-  const LoadFeedback._({
-    @required this.noData,
-    @required this.failure,
-    @required this.noMoreData,
-  })  : assert(noData != null),
-        assert(failure != null),
-        assert(noMoreData != null);
-}
-
-typedef Future<void> LoadCallback([LoadFeedback feedback]);
+typedef Future<void> LoadCallback();
 
 class LoadControl extends StatefulWidget {
-  const LoadControl({
+  LoadControl({
     Key key,
-    this.controller,
     @required this.onLoad,
-    this.loadTriggerDistance = 20.0,
-    this.delegate = const DefaultLoadIndicatorDelegate(),
+    this.delegate = const LoadIndicatorDelegate(),
   })  : assert(onLoad != null),
         assert(delegate != null),
-        assert(loadTriggerDistance != null),
-        assert(loadTriggerDistance > 0.0),
         super(key: key);
 
   final LoadCallback onLoad;
-  final double loadTriggerDistance;
-  final RefreshController controller;
   final LoadIndicatorDelegate delegate;
 
   @override
@@ -56,69 +36,52 @@ class LoadControl extends StatefulWidget {
 }
 
 class _LoadControlState extends State<LoadControl> implements _Loader {
-  dynamic error;
+  dynamic failure;
   Future<void> loadTask;
-  LoadFeedback feedback;
+  void Function() disposer;
   LoadIndicatorMode loadState;
-  RefreshController controller;
 
   @override
   void initState() {
     super.initState();
     loadState = LoadIndicatorMode.noData;
-    feedback = LoadFeedback._(
-      noData: () {
-        if (mounted) setState(() => loadState = LoadIndicatorMode.noData);
-      },
-      noMoreData: () {
-        if (mounted) setState(() => loadState = LoadIndicatorMode.noMoreData);
-      },
-      failure: ([error]) {
-        if (mounted) {
-          setState(() {
-            error = error;
-            loadState = LoadIndicatorMode.error;
-          });
-        }
-      },
-    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    updateController(widget.controller ?? RefreshTrigger.of(context));
-  }
-
-  @override
-  void didUpdateWidget(LoadControl oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    updateController(widget.controller ?? RefreshTrigger.of(context));
-  }
-
-  void updateController(RefreshController newController) {
-    assert(
-      newController != null,
-      "The 'LoadControl' must have a 'RefreshController' or be integrated with 'RefreshTrigger'.",
-    );
-    if (!identical(controller, newController)) {
-      if (controller != null) {
-        controller.offLoad(this);
-      }
-      controller = newController;
-      if (controller != null) {
-        controller.onLoad(this);
-      }
+    if (disposer != null) {
+      disposer();
+      disposer = null;
     }
+    final trigger = _RefreshTriggerScope.of(context);
+    assert(
+      trigger != null,
+      "LoadControl must be integrated with a RefreshTrigger.",
+    );
+    trigger.registerLoader(this);
+    disposer = () => trigger.unregisterLoader(this);
   }
 
   @override
   void dispose() {
-    feedback = null;
-    if (controller != null) {
-      controller.offLoad(this);
+    if (disposer != null) {
+      disposer();
+      disposer = null;
     }
     super.dispose();
+  }
+
+  bool get isLoading => loadTask != null;
+
+  void failedToLoad(dynamic payload) {
+    failure = payload;
+    if (mounted) setState(() => loadState = LoadIndicatorMode.error);
+  }
+
+  void loadSuccessfully(bool hasData, bool hasMoreData) {
+    failure = null;
+    updateLoadState(hasData, hasMoreData);
   }
 
   bool get canLoad =>
@@ -128,13 +91,27 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
       loadState != LoadIndicatorMode.noData &&
       loadState != LoadIndicatorMode.noMoreData;
 
-  double get loadTriggerDistance => widget.loadTriggerDistance;
+  void updateLoadState(bool hasData, bool hasMoreData) {
+    if (!mounted) return;
+    assert(hasData != null);
+    assert(hasMoreData != null);
+    if (!hasData) {
+      setState(() => loadState = LoadIndicatorMode.noData);
+      return;
+    }
+    if (!hasMoreData) {
+      setState(() => loadState = LoadIndicatorMode.noMoreData);
+      return;
+    }
+  }
+
+  double get loadTriggerDistance => widget.delegate.loadTriggerDistance;
 
   void load() {
     if (canLoad) {
-      loadTask = widget.onLoad(feedback).whenComplete(() {
+      loadTask = widget.onLoad().whenComplete(() {
         loadTask = null;
-        if (loadState == LoadIndicatorMode.load && mounted) {
+        if (mounted && loadState == LoadIndicatorMode.load) {
           setState(() => loadState = LoadIndicatorMode.idle);
         }
       });
@@ -146,7 +123,7 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: load,
-      child: widget.delegate._buildIndicator(context, loadState, error),
+      child: widget.delegate._buildIndicator(context, loadState, failure),
     );
   }
 }
@@ -154,5 +131,9 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
 abstract class _Loader {
   void load();
   bool get canLoad;
+  bool get isLoading;
   double get loadTriggerDistance;
+  void failedToLoad(dynamic payload);
+  void updateLoadState(bool hasData, bool hasMoreData);
+  void loadSuccessfully(bool hasData, bool hasMoreData);
 }
