@@ -69,8 +69,10 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
       trigger != null,
       "RefreshControl must be integrated with a RefreshTrigger.",
     );
-    trigger.registerRefresher(this);
-    disposer = () => trigger.unregisterRefresher(this);
+    trigger.refresher = this;
+    disposer = () {
+      if (trigger.refresher == this) trigger.refresher = null;
+    };
   }
 
   @override

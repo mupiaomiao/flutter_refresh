@@ -59,8 +59,10 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
       trigger != null,
       "LoadControl must be integrated with a RefreshTrigger.",
     );
-    trigger.registerLoader(this);
-    disposer = () => trigger.unregisterLoader(this);
+    trigger.loader = this;
+    disposer = () {
+      if (trigger.loader == this) trigger.loader = null;
+    };
   }
 
   @override

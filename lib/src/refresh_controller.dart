@@ -66,26 +66,6 @@ class RefreshController {
     _delegate = null;
   }
 
-  void _register(_RefreshControllerDelegate delegate) {
-    assert(
-      !_disposed,
-      "RefreshController has disposed.",
-    );
-    assert(delegate != null);
-    assert(_delegate == null);
-    _delegate = delegate;
-  }
-
-  void _unregister(_RefreshControllerDelegate delegate) {
-    assert(
-      !_disposed,
-      "RefreshController has disposed.",
-    );
-    assert(delegate != null);
-    assert(_delegate == delegate);
-    _delegate = null;
-  }
-
   bool _disposed = false;
   _RefreshControllerDelegate _delegate;
 }

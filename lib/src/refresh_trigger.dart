@@ -18,22 +18,53 @@ class RefreshTrigger extends StatefulWidget {
 
 class _RefreshTriggerState extends State<RefreshTrigger>
     implements _RefreshControllerDelegate {
-  _Loader loader;
-  _Refresher refresher;
   void Function() disposer;
+
+  _Loader _loader;
+  _Loader get loader => _loader;
+  set loader(_Loader value) {
+    if (value == _loader) return;
+    final oldValue = _loader;
+    _loader = value;
+    if ((oldValue == null || value == null) && mounted) {
+      setState(() {});
+    }
+  }
+
+  _Refresher _refresher;
+  _Refresher get refresher => _refresher;
+  set refresher(_Refresher value) {
+    if (value == _refresher) return;
+    final oldValue = _refresher;
+    _refresher = value;
+    if ((oldValue == null || value == null) && mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    widget.controller._register(this);
+    widget.controller._delegate = this;
+    disposer = () {
+      if (widget.controller._delegate == this)
+        widget.controller._delegate = null;
+    };
   }
 
   @override
   void didUpdateWidget(RefreshTrigger oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
-      widget.controller._register(this);
-      oldWidget.controller._unregister(this);
+      if (disposer != null) {
+        disposer();
+        disposer = null;
+      }
+      widget.controller._delegate = this;
+      disposer = () {
+        if (widget.controller._delegate == this)
+          widget.controller._delegate = null;
+      };
     }
   }
 
@@ -41,7 +72,10 @@ class _RefreshTriggerState extends State<RefreshTrigger>
   void dispose() {
     loader = null;
     refresher = null;
-    widget.controller._unregister(this);
+    if (disposer != null) {
+      disposer();
+      disposer = null;
+    }
     super.dispose();
   }
 
@@ -72,34 +106,6 @@ class _RefreshTriggerState extends State<RefreshTrigger>
       state: this,
       child: child,
     );
-  }
-
-  void registerLoader(_Loader delegate) {
-    assert(loader == null);
-    assert(delegate != null);
-    loader = delegate;
-    if (mounted) setState(() {});
-  }
-
-  void unregisterLoader(_Loader delegate) {
-    assert(delegate != null);
-    assert(loader == delegate);
-    loader = null;
-    if (mounted) setState(() {});
-  }
-
-  void registerRefresher(_Refresher delegate) {
-    assert(refresher == null);
-    assert(delegate != null);
-    refresher = delegate;
-    if (mounted) setState(() {});
-  }
-
-  void unregisterRefresher(_Refresher delegate) {
-    assert(delegate != null);
-    assert(refresher == delegate);
-    refresher = null;
-    if (mounted) setState(() {});
   }
 
   bool get isLoading => loader?.isLoading ?? false;
