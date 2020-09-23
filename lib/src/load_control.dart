@@ -37,6 +37,9 @@ class LoadControl extends StatefulWidget {
 
 class _LoadControlState extends State<LoadControl> implements _Loader {
   dynamic failure;
+  bool noData = false;
+  bool isFailed = false;
+  bool noMoreData = false;
   Future<void> loadTask;
   void Function() disposer;
   LoadIndicatorMode loadState;
@@ -88,12 +91,13 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
   bool get isLoading => loadTask != null;
 
   void failedToLoad(dynamic payload) {
+    isFailed = true;
     failure = payload;
-    if (mounted) setState(() => loadState = LoadIndicatorMode.error);
   }
 
   void loadSuccessfully(bool hasData, bool hasMoreData) {
     failure = null;
+    isFailed = false;
     updateLoadState(hasData, hasMoreData);
   }
 
@@ -105,17 +109,10 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
       loadState != LoadIndicatorMode.noMoreData;
 
   void updateLoadState(bool hasData, bool hasMoreData) {
-    if (!mounted) return;
     assert(hasData != null);
     assert(hasMoreData != null);
-    if (!hasData) {
-      setState(() => loadState = LoadIndicatorMode.noData);
-      return;
-    }
-    if (!hasMoreData) {
-      setState(() => loadState = LoadIndicatorMode.noMoreData);
-      return;
-    }
+    noData = !hasData;
+    noMoreData = !hasMoreData;
   }
 
   double get loadTriggerDistance => widget.delegate.loadTriggerDistance;
@@ -124,9 +121,20 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
     if (canLoad) {
       loadTask = widget.onLoad().whenComplete(() {
         loadTask = null;
-        if (mounted && loadState == LoadIndicatorMode.load) {
-          setState(() => loadState = LoadIndicatorMode.idle);
+        if (isFailed) {
+          isFailed = false;
+          setState(() => loadState = LoadIndicatorMode.error);
+          return;
         }
+        if (noData) {
+          setState(() => loadState = LoadIndicatorMode.noData);
+          return;
+        }
+        if (noMoreData) {
+          setState(() => loadState = LoadIndicatorMode.noMoreData);
+          return;
+        }
+        setState(() => loadState = LoadIndicatorMode.idle);
       });
       setState(() => loadState = LoadIndicatorMode.load);
     }
