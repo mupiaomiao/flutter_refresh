@@ -140,6 +140,6 @@ class _RefreshTriggerScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_RefreshTriggerScope oldWidget) {
-    return true;
+    return oldWidget.state != state;
   }
 }
