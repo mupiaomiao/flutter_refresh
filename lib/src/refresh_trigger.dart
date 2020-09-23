@@ -69,6 +69,17 @@ class _RefreshTriggerState extends State<RefreshTrigger>
   }
 
   @override
+  void setState(VoidCallback fn) {
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      if (mounted) super.setState(fn);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        if (mounted) super.setState(fn);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     loader = null;
     refresher = null;

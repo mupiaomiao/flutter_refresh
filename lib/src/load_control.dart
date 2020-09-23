@@ -66,6 +66,17 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
   }
 
   @override
+  void setState(VoidCallback fn) {
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      if (mounted) super.setState(fn);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        if (mounted) super.setState(fn);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     if (disposer != null) {
       disposer();
