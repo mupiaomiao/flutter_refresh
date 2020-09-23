@@ -96,9 +96,12 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
   }
 
   void loadSuccessfully(bool hasData, bool hasMoreData) {
+    assert(hasData != null);
+    assert(hasMoreData != null);
     failure = null;
     isFailed = false;
-    updateLoadState(hasData, hasMoreData);
+    noData = !hasData;
+    noMoreData = !hasMoreData;
   }
 
   bool get canLoad =>
@@ -113,6 +116,20 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
     assert(hasMoreData != null);
     noData = !hasData;
     noMoreData = !hasMoreData;
+    if (isFailed) {
+      isFailed = false;
+      setState(() => loadState = LoadIndicatorMode.error);
+      return;
+    }
+    if (noData) {
+      setState(() => loadState = LoadIndicatorMode.noData);
+      return;
+    }
+    if (noMoreData) {
+      setState(() => loadState = LoadIndicatorMode.noMoreData);
+      return;
+    }
+    setState(() => loadState = LoadIndicatorMode.idle);
   }
 
   double get loadTriggerDistance => widget.delegate.loadTriggerDistance;
