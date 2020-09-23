@@ -15,7 +15,10 @@ dependencies:
     git:
       url: git://github.com/mupiaomiao/flutter_gestures.git
       ref: master
-
+  flutter_event:
+    git:
+      url: git://github.com/mupiaomiao/flutter_event.git
+      ref: master
 dev_dependencies:
   flutter_test:
     sdk: flutter

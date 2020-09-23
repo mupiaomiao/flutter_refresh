@@ -3,8 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_event/flutter_event.dart';
 import 'package:flutter_gestures/flutter_gestures.dart';
-import 'package:flutter_refresh/flutter_refresh.dart';
 
 import 'sliver_refresh.dart';
 
@@ -41,7 +41,7 @@ class RefreshControl extends StatefulWidget {
   _RefreshControlState createState() => _RefreshControlState();
 }
 
-class _RefreshControlState extends State<RefreshControl> implements _Refresher {
+class _RefreshControlState extends State<RefreshControl> {
   dynamic failure;
   dynamic success;
   bool isFailed = false;
@@ -70,9 +70,50 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
       trigger != null,
       "RefreshControl must be integrated with a RefreshTrigger.",
     );
-    trigger.refresher = this;
+    final startRefreshEvent = $eventBus.onEvent(
+      trigger.refreshEvent,
+      (event) {
+        refresh();
+      },
+    );
+    final dragCancelEvent = $eventBus.onEvent<Object>(
+      trigger.dragEvent,
+      (event) {
+        dragCancel();
+      },
+    );
+    final dragEndEvent = $eventBus.onEventWithArg<Object, DragEndDetails>(
+      trigger.dragEvent,
+      (event, arg) {
+        dragEnd(arg);
+      },
+    );
+    final dragStartEvent = $eventBus.onEventWithArg<Object, DragStartDetails>(
+      trigger.dragEvent,
+      (event, arg) {
+        dragStart(arg);
+      },
+    );
+    final failedToRefreshEvent = $eventBus.onEventWithArg<Object, dynamic>(
+      trigger.refreshEvent,
+      (event, arg) {
+        if (refreshTask != null) failedToRefresh(arg);
+      },
+    );
+    final refreshSuccessfullyEvent =
+        $eventBus.onEventWith3Args<Object, bool, bool, dynamic>(
+      trigger.refreshEvent,
+      (event, arg1, arg2, arg3) {
+        if (refreshTask != null) refreshSuccessfully(arg3);
+      },
+    );
     disposer = () {
-      if (trigger.refresher == this) trigger.refresher = null;
+      dragEndEvent();
+      dragStartEvent();
+      dragCancelEvent();
+      startRefreshEvent();
+      failedToRefreshEvent();
+      refreshSuccessfullyEvent();
     };
   }
 
@@ -96,8 +137,6 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
     super.dispose();
   }
 
-  bool get isRefreshing => refreshTask != null;
-
   void dragCancel() {
     if (dragging) dragging = false;
   }
@@ -114,7 +153,7 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
   }
 
   void refresh() {
-    if (refreshTask != null || widget.onRefresh == null) return;
+    if (!mounted || refreshTask != null || widget.onRefresh == null) return;
     refreshTask = widget.onRefresh().whenComplete(() {
       final milliseconds = isFailed
           ? widget.delegate.failureDuration
@@ -218,14 +257,10 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
     return nextState;
   }
 
-  double get refreshIndicatorLayoutExtent {
-    if (refreshTask != null) return widget.delegate.refreshIndicatorExtent;
-    if (delayFuture != null) {
-      if (isFailed) return widget.delegate.failureIndicatorExtent;
-      return widget.delegate.successIndicatorExtent;
-    }
-    return 0.0;
-  }
+  double get refreshIndicatorLayoutExtent =>
+      refreshTask != null || delayFuture != null
+          ? widget.delegate.refreshIndicatorExtent
+          : 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -247,14 +282,4 @@ class _RefreshControlState extends State<RefreshControl> implements _Refresher {
       ),
     );
   }
-}
-
-abstract class _Refresher {
-  void refresh();
-  void dragCancel();
-  bool get isRefreshing;
-  void dragEnd(DragEndDetails details);
-  void failedToRefresh(dynamic payload);
-  void dragStart(DragStartDetails details);
-  void refreshSuccessfully(dynamic payload);
 }

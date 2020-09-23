@@ -83,8 +83,6 @@ class RefreshIndicatorDelegate {
     this.refreshIndicatorSize = kRefreshIndicatorSize,
     this.refreshIndicatorColor = kRefreshIndicatorColor,
     this.refreshIndicatorExtent = kRefreshIndicatorExtent,
-    this.successIndicatorExtent = kRefreshIndicatorExtent,
-    this.failureIndicatorExtent = kRefreshIndicatorExtent,
     this.refreshTriggerPullDistance = kRefreshTriggerPullDistance,
   })  : assert(dragIndicatorBuilder != null),
         assert(armedIndicatorBuilder != null),
@@ -107,10 +105,6 @@ class RefreshIndicatorDelegate {
         assert(refreshIndicatorColor != null),
         assert(refreshIndicatorExtent != null),
         assert(refreshIndicatorExtent > 0.0),
-        assert(successIndicatorExtent != null),
-        assert(successIndicatorExtent > 0.0),
-        assert(failureIndicatorExtent != null),
-        assert(failureIndicatorExtent > 0.0),
         assert(refreshTriggerPullDistance != null),
         assert(refreshTriggerPullDistance >= refreshIndicatorExtent);
 
@@ -122,12 +116,6 @@ class RefreshIndicatorDelegate {
 
   /// 刷新指示器显示高度
   final double refreshIndicatorExtent;
-
-  /// 刷新成功指示器显示高度
-  final double successIndicatorExtent;
-
-  /// 刷新失败指示器显示高度
-  final double failureIndicatorExtent;
 
   /// 刷新触发高度
   final double refreshTriggerPullDistance;

@@ -35,7 +35,7 @@ class LoadControl extends StatefulWidget {
   _LoadControlState createState() => _LoadControlState();
 }
 
-class _LoadControlState extends State<LoadControl> implements _Loader {
+class _LoadControlState extends State<LoadControl> {
   dynamic failure;
   bool noData = false;
   bool isFailed = false;
@@ -62,9 +62,28 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
       trigger != null,
       "LoadControl must be integrated with a RefreshTrigger.",
     );
-    trigger.loader = this;
+    final scrollEvent = $eventBus
+        .onEventWithArg<Object, double>(trigger.scrollEvent, (event, arg) {
+      if (canLoad && arg <= widget.delegate.loadTriggerDistance) load();
+    });
+    final failEvent = $eventBus
+        .onEventWithArg<Object, dynamic>(trigger.loadEvent, (event, arg) {
+      if (loadTask != null) failedToLoad(arg);
+    });
+    final successEvent = $eventBus.onEventWith2Args<Object, bool, bool>(
+        trigger.loadEvent, (event, arg1, arg2) {
+      if (loadTask != null) loadSuccessfully(arg1, arg2);
+    });
+    final refreshEvent = $eventBus
+        .onEventWith3Args<Object, bool, bool, dynamic>(trigger.refreshEvent,
+            (event, arg1, arg2, arg3) {
+      updateLoadState(arg1, arg2);
+    });
     disposer = () {
-      if (trigger.loader == this) trigger.loader = null;
+      failEvent();
+      scrollEvent();
+      successEvent();
+      refreshEvent();
     };
   }
 
@@ -88,8 +107,6 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
     super.dispose();
   }
 
-  bool get isLoading => loadTask != null;
-
   void failedToLoad(dynamic payload) {
     isFailed = true;
     failure = payload;
@@ -106,6 +123,7 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
 
   bool get canLoad =>
       mounted &&
+      loadTask == null &&
       loadState != null &&
       loadState != LoadIndicatorMode.load &&
       loadState != LoadIndicatorMode.noData &&
@@ -132,46 +150,34 @@ class _LoadControlState extends State<LoadControl> implements _Loader {
     setState(() => loadState = LoadIndicatorMode.idle);
   }
 
-  double get loadTriggerDistance => widget.delegate.loadTriggerDistance;
-
   void load() {
-    if (canLoad) {
-      loadTask = widget.onLoad().whenComplete(() {
-        loadTask = null;
-        if (isFailed) {
-          isFailed = false;
-          setState(() => loadState = LoadIndicatorMode.error);
-          return;
-        }
-        if (noData) {
-          setState(() => loadState = LoadIndicatorMode.noData);
-          return;
-        }
-        if (noMoreData) {
-          setState(() => loadState = LoadIndicatorMode.noMoreData);
-          return;
-        }
-        setState(() => loadState = LoadIndicatorMode.idle);
-      });
-      setState(() => loadState = LoadIndicatorMode.load);
-    }
+    loadTask = widget.onLoad().whenComplete(() {
+      loadTask = null;
+      if (isFailed) {
+        isFailed = false;
+        setState(() => loadState = LoadIndicatorMode.error);
+        return;
+      }
+      if (noData) {
+        setState(() => loadState = LoadIndicatorMode.noData);
+        return;
+      }
+      if (noMoreData) {
+        setState(() => loadState = LoadIndicatorMode.noMoreData);
+        return;
+      }
+      setState(() => loadState = LoadIndicatorMode.idle);
+    });
+    setState(() => loadState = LoadIndicatorMode.load);
   }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: load,
-      child: widget.delegate._buildIndicator(context, loadState, failure),
+    return SliverToBoxAdapter(
+      child: InkWell(
+        onTap: load,
+        child: widget.delegate._buildIndicator(context, loadState, failure),
+      ),
     );
   }
-}
-
-abstract class _Loader {
-  void load();
-  bool get canLoad;
-  bool get isLoading;
-  double get loadTriggerDistance;
-  void failedToLoad(dynamic payload);
-  void updateLoadState(bool hasData, bool hasMoreData);
-  void loadSuccessfully(bool hasData, bool hasMoreData);
 }

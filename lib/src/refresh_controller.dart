@@ -6,7 +6,7 @@ class RefreshController {
       !_disposed,
       "RefreshController has disposed.",
     );
-    _delegate?.startRefresh();
+    $eventBus.emitEvent(_refreshEvent);
   }
 
   void failedToLoad({dynamic payload}) {
@@ -14,11 +14,7 @@ class RefreshController {
       !_disposed,
       "RefreshController has disposed.",
     );
-    assert(
-      _delegate?.isLoading ?? false,
-      "RefreshController.failedToLoad only can be called when the load task did not complete.",
-    );
-    _delegate?.failedToLoad(payload);
+    $eventBus.emitEventWithArg(_loadEvent, payload);
   }
 
   void loadSuccessfully(bool hasData, bool hasMoreData) {
@@ -26,11 +22,9 @@ class RefreshController {
       !_disposed,
       "RefreshController has disposed.",
     );
-    assert(
-      _delegate?.isLoading ?? false,
-      "RefreshController.loadSuccessfully only can be called when the load task did not complete.",
-    );
-    _delegate?.loadSuccessfully(hasData, hasMoreData);
+    assert(hasData != null);
+    assert(hasMoreData != null);
+    $eventBus.emitEventWith2Args(_loadEvent, hasData, hasMoreData);
   }
 
   void failedToRefresh({dynamic payload}) {
@@ -38,11 +32,7 @@ class RefreshController {
       !_disposed,
       "RefreshController has disposed.",
     );
-    assert(
-      _delegate?.isRefreshing ?? false,
-      "RefreshController.failedToRefresh only can be called when the refresh task did not complete.",
-    );
-    _delegate?.failedToRefresh(payload);
+    $eventBus.emitEventWithArg(_refreshEvent, payload);
   }
 
   void refreshSuccessfully(bool hasData, bool hasMoreData, {dynamic payload}) {
@@ -50,11 +40,9 @@ class RefreshController {
       !_disposed,
       "RefreshController has disposed.",
     );
-    assert(
-      _delegate?.isRefreshing ?? false,
-      "RefreshController.refreshSuccessfully only can be called when the refresh task did not complete.",
-    );
-    _delegate?.refreshSuccessfully(hasData, hasMoreData, payload);
+    assert(hasData != null);
+    assert(hasMoreData != null);
+    $eventBus.emitEventWith3Args(_refreshEvent, hasData, hasMoreData, payload);
   }
 
   void dispose() {
@@ -63,19 +51,9 @@ class RefreshController {
       "RefreshController has disposed.",
     );
     _disposed = true;
-    _delegate = null;
   }
 
   bool _disposed = false;
-  _RefreshControllerDelegate _delegate;
-}
-
-abstract class _RefreshControllerDelegate {
-  void startRefresh();
-  bool get isLoading;
-  bool get isRefreshing;
-  void failedToLoad(dynamic payload);
-  void loadSuccessfully(bool hasData, bool hasMoreData);
-  void failedToRefresh(dynamic payload);
-  void refreshSuccessfully(bool hasData, bool hasMoreData, dynamic payload);
+  final Object _loadEvent = Object();
+  final Object _refreshEvent = Object();
 }

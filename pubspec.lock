@@ -55,6 +55,15 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_event:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: master
+      resolved-ref: fda704658dc9300e4b044070719ae08c860542ab
+      url: "git://github.com/mupiaomiao/flutter_event.git"
+    source: git
+    version: "1.0.0"
   flutter_gestures:
     dependency: "direct main"
     description:
