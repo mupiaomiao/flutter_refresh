@@ -20,7 +20,16 @@ class RefreshTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gestureBinding = UIGestureArena.of(context) ?? _gestureBinding;
+    assert(() {
+      if (gestureBinding != null) {
+        print(gestureBinding);
+        return true;
+      }
+      return false;
+    }());
     return UIGestureDetector(
+      gestureBinding: gestureBinding,
       onVerticalDragCancel: () {
         $eventBus.emitEvent(_dragEvent);
       },
@@ -30,7 +39,6 @@ class RefreshTrigger extends StatelessWidget {
       onVerticalDragStart: (details) {
         $eventBus.emitEventWithArg(_dragEvent, details);
       },
-      gestureBinding: UIGestureArena.of(context) ?? _gestureBinding,
       child: NotificationListener<ScrollNotification>(
         child: _RefreshTriggerScope(
           child: child,
