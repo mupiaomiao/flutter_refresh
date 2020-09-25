@@ -7,6 +7,8 @@ class RefreshTrigger extends StatelessWidget {
   final RefreshController controller;
   final void Function(ScrollMetrics metrics) onScroll;
 
+  static final _gestureBinding = UIGestureBinding();
+
   RefreshTrigger({
     Key key,
     this.onScroll,
@@ -28,6 +30,7 @@ class RefreshTrigger extends StatelessWidget {
       onVerticalDragStart: (details) {
         $eventBus.emitEventWithArg(_dragEvent, details);
       },
+      gestureBinding: UIGestureArena.of(context) ?? _gestureBinding,
       child: NotificationListener<ScrollNotification>(
         child: _RefreshTriggerScope(
           child: child,

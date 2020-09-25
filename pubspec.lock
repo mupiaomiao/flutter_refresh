@@ -69,7 +69,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: "976af20c614901bd21f988fc01883eabe76fcdf1"
+      resolved-ref: add0031f7e055e12f971fd5f7a98700bd7552277
       url: "git://github.com/mupiaomiao/flutter_gestures.git"
     source: git
     version: "0.0.1"
