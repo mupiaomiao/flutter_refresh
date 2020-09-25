@@ -21,13 +21,7 @@ class RefreshTrigger extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gestureBinding = UIGestureArena.of(context) ?? _gestureBinding;
-    assert(() {
-      if (gestureBinding != null) {
-        print(gestureBinding);
-        return true;
-      }
-      return false;
-    }());
+    assert(gestureBinding != null);
     return UIGestureDetector(
       gestureBinding: gestureBinding,
       onVerticalDragCancel: () {
