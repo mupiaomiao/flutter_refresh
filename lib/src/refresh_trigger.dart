@@ -20,11 +20,10 @@ class RefreshTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final gestureBinding = UIGestureArena.of(context) ?? _gestureBinding;
-    // assert(gestureBinding != null);
+    final gestureBinding = UIGestureArena.of(context) ?? _gestureBinding;
+    assert(gestureBinding != null);
     return UIGestureDetector(
-      gestureBinding: UIGestureBinding(),
-      // gestureBinding: gestureBinding,
+      gestureBinding: gestureBinding,
       onVerticalDragCancel: () {
         $eventBus.emitEvent(_dragEvent);
       },
