@@ -7,8 +7,6 @@ class RefreshTrigger extends StatelessWidget {
   final RefreshController controller;
   final void Function(ScrollMetrics metrics) onScroll;
 
-  static final _gestureBinding = UIGestureBinding();
-
   RefreshTrigger({
     Key key,
     this.onScroll,
@@ -20,10 +18,7 @@ class RefreshTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gestureBinding = UIGestureArena.of(context) ?? _gestureBinding;
-    assert(gestureBinding != null);
     return UIGestureDetector(
-      gestureBinding: gestureBinding,
       onVerticalDragCancel: () {
         $eventBus.emitEvent(_dragEvent);
       },
