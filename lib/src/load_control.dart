@@ -175,7 +175,9 @@ class _LoadControlState extends State<LoadControl> {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: InkWell(
-        onTap: load,
+        onTap: () {
+          if (canLoad) load();
+        },
         child: widget.delegate._buildIndicator(context, loadState, failure),
       ),
     );
